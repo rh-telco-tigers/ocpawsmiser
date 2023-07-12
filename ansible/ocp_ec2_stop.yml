@@ -1,0 +1,53 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Gather information about any instance with Name containing windows-worker
+      amazon.aws.ec2_instance_info:
+        profile: "{{ aws_profile }}"
+        region: "{{ ec2_region }}"
+        filters:
+          "tag:Name": "*-windows-worker-*"
+          instance-state-name: [ "running"]
+      register: ec2_windows_worker
+    - name: Gather information about any instance with Name containing master
+      amazon.aws.ec2_instance_info:
+        profile: "{{ aws_profile }}"
+        region: "{{ ec2_region }}"
+        filters:
+          "tag:Name": "*-master-*"
+          instance-state-name: [ "running"]
+      register: ec2_master
+    - name: Gather information about any instance with Name containing worker
+      amazon.aws.ec2_instance_info:
+        profile: "{{ aws_profile }}"
+        region: "{{ ec2_region }}"
+        filters:
+          "tag:Name": "*-mb9dw-worker-*"
+          instance-state-name: [ "running"]
+      register: ec2_linux_worker
+    - name: Stop Windows Instances
+      amazon.aws.ec2_instance:
+        profile: "{{ aws_profile }}"
+        instance_ids: "{{ item.instance_id }}"
+        region: "{{ ec2_region }}"
+        state: stopped
+        wait: yes
+      with_items: "{{ ec2_windows_worker.instances }}"
+    - name: Stop Linux Workers
+      amazon.aws.ec2_instance:
+        profile: "{{ aws_profile }}"
+        instance_ids: "{{ item.instance_id }}"
+        region: "{{ ec2_region }}"
+        state: stopped
+        wait: yes
+      with_items: "{{ ec2_linux_worker.instances }}"
+    - name: Stop Master Instances
+      amazon.aws.ec2_instance:
+        profile: "{{ aws_profile }}"
+        instance_ids: "{{ item.instance_id }}"
+        region: "{{ ec2_region }}"
+        state: stopped
+        wait: yes
+      with_items: "{{ ec2_master.instances }}"
+
